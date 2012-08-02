@@ -52,14 +52,14 @@ t(cellfun(@(x) all(x==[0 0]),t)) = {[1 1]};
 
 if all( w{1}==[0 0] )
   if cycle
-    w{1} = z{2}-z{end};
+    w{1} = z{2}-z{end-1};
   else
     w{1} = z{2}-z{1};
   end
 end
 if all( w{end}==[0 0] )
   if cycle
-    w{end} = z{2}-z{end};
+    w{end} = z{2}-z{end-1};
   else
     w{end} = z{end}-z{end-1};
   end
@@ -99,6 +99,7 @@ end
 if debug
   parfor ii = 1:Npoints
     plot(z{ii}(1),z{ii}(2),'o','color',[1 0 0])
+    text(z{ii}(1),z{ii}(2),['   ',num2str(ii)])
   end
 end
 
