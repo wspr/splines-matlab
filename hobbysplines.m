@@ -1,5 +1,10 @@
-function splines(points,varargin)
-
+function hobbysplines(points,varargin)
+%HOBBYSPLINES Draws open or closed smooth curves from keypoints
+%
+% hobbysplines({[x1 y1], [x2 y2],... ,[xN,yN]},[opts])
+%
+% Draws a closed (cyclic) curve through keypoints 1 to N.
+% Use the ['cycle',false] option to draw an open curve instead.
 
 %% Parse inputs
 
