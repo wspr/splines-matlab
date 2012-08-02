@@ -31,9 +31,8 @@ end
 if iscell(p.Results.tensions)
   t = p.Results.tensions;
 else
-  t = repmat({[0 0]},size(z));
+  t = repmat({[1.4 1.4]},size(z)); % tension = 1 seems too tight??
 end
-
 
 if cycle
   z{end+1} = z{1};
