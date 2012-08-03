@@ -111,14 +111,12 @@ for ii = 1:Npoints-1
   
   [rho,sigma] = velocity_parameters(theta,phi);
   
-  control_points = [...
-    z{ii};
-    z{ii}+rho/(3*t{ii}(1))*norm(z{ii+1}-z{ii})*w{ii};
-    z{ii+1}-sigma/(3*t{ii+1}(2))*norm(z{ii+1}-z{ii})*w{ii+1};
-    z{ii+1};
-    ];
-  
-  mybez(control_points,p.Results.linestyle)
+  plot_bezier(...
+    z{ii},...
+    z{ii}+rho/(3*t{ii}(1))*norm(z{ii+1}-z{ii})*w{ii},...
+    z{ii+1}-sigma/(3*t{ii+1}(2))*norm(z{ii+1}-z{ii})*w{ii+1},...
+    z{ii+1},...
+    p.Results.linestyle)
 
 end
 
@@ -156,37 +154,18 @@ sigma = (2-alpha)/(1+(1-c)*cp+c*ct);
 
 end
 
-function mybez(P,linestyle)
-% This function is an edited version of mybez.m by Sagar Aiya.
-% Original source, licensed under BSD:
-% <http://www.mathworks.com/matlabcentral/fileexchange/30759-bezier-curve-plotter/>
-%
-% This is probably overkill for what I need but it was the first thing I
-% stumbled up :) I'd prefer to reimplement something myself if time
-% permits.
+function plot_bezier(P1,P2,P3,P4,linestyle)
 
-P = transpose(P);
-n = length(P);
-count = 1;
+N = 50;
+t = linspace(0,1,N)';
 
-div = 50; %number of segments of the curve (Increase this value to obtain a
-          %smoother curve
+c1 = 3*(P2 - P1);
+c2 = 3*(P1 - 2*P2 + P3);
+c3 = -P1 + 3*(P2-P3) + P4;
 
-for u = 0:(1/div):1
-    sum = [0 0]';
-    for i = 1:n
-        B = nchoosek(n,i-1)*(u^(i-1))*((1-u)^(n-i+1)); %B is the Bernstein polynomial value
-        sum = sum + B*P(:,i);
-    end
-    B = nchoosek(n,n)*(u^(n));
-    sum = sum + B*P(:,n);
-    A(:,count) = sum; %the matrix containing the points of curve as column vectors. 
-    count = count+1;  % count is the index of the points on the curve.
-end
+Q = t.^3*c3 + t.^2*c2 + t*c1 + repmat(P1,[N 1]);
 
-x = A(1,:);
-y = A(2,:);
-plot(x,y,linestyle{:});
+plot(Q(:,1),Q(:,2),linestyle{:});
 
 end
 
