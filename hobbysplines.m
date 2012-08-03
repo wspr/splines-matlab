@@ -68,7 +68,7 @@ for n = 1:Npoints
     t{n} = p.Results.defaultTension*[1 1];
     
     if veclen >= 2 && isnumeric(pp{2}) % lazy evaluation is my friend
-      w{n} = [cosd(pp(3)) sind(pp(3))];
+      w{n} = [cosd(pp{2}) sind(pp{2})];
     end
     
     if veclen >= 3 && isnumeric(pp{3})
