@@ -4,15 +4,31 @@ function hobbysplines(points,varargin)
 % hobbysplines({[x1 y1], [x2 y2],... ,[xN,yN]},[opts])
 %
 % Draws a closed (cyclic) curve through keypoints 1 to N.
+% Keypoints may be specified with optional slopes and tension parameters.
+% The syntax to do this (replacing `[x1 y1]` above, say) is
 %
-% [x1 y1 s tout tin]
+%    { [x1 y1] s1 t1_out t1_in }
 %
-% Optional arguments:
+% where `s1` is the slope in degrees of the curve through `[x1 y1]`,
+% and `t1_out` & `t1_in` are the "exit" and "entry" tensions of the curve
+% approaching that point.
 %
-%   'defaultTension' - [1.4] default tension between points
-%   'cycle'  [true]|false  - draw an open curve instead
-%   'debug'  true|[false]  - draw and label keypoints on the curve
-%   'linestyle'  - cell of line style options; default {'color','black','linewidth',1}
+% Use '' to indicate default values here; for example, for a default slope
+% but specified "exit" tension of 2.0, use
+%
+%    { [x1 y1] '' 2.0 }
+%
+% and note that trailing optional arguments can also be omitted.
+%
+% Optional arguments given by [opts] can be any combination of the
+% following:
+%
+%   OPTION       DEFAULT            DESCRIPTION
+%   ------       -------            -----------
+%   'tension'    [1.4]              default tension between points
+%   'cycle'      [true]             draw an open curve instead
+%   'debug'      [false]            draw and label keypoints on the curve
+%   'linestyle'  {'color','black'}  cell of line style options
 
 
 %% Parse inputs
