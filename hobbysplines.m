@@ -4,60 +4,86 @@ function hobbysplines(points,varargin)
 % hobbysplines({[x1 y1], [x2 y2],... ,[xN,yN]},[opts])
 %
 % Draws a closed (cyclic) curve through keypoints 1 to N.
-% Use the ['cycle',false] option to draw an open curve instead.
+%
+% [x1 y1 s tout tin]
+%
+% Optional arguments:
+%
+%   'defaultTension' - [1.4] default tension between points
+%   'cycle'  [true]|false  - draw an open curve instead
+%   'debug'  true|[false]  - draw and label keypoints on the curve
+%   'linestyle'  - cell of line style options; default {'color','black','linewidth',1}
+
 
 %% Parse inputs
 
 p = inputParser;
 p.addRequired('points',@iscell)
-p.addOptional('slopes',false);
-p.addOptional('tensions',false);
+p.addOptional('defaultTension',1.4); % tension = 1 seems too tight??
 p.addOptional('cycle',true);
 p.addOptional('debug',false);
 p.addOptional('linestyle',{'color','black','linewidth',1});
 
 p.parse(points,varargin{:});
 
-z = p.Results.points;
 cycle = p.Results.cycle;
 debug = p.Results.debug;
-
-if numel(p.Results.slopes) > 1
-  w = arrayfun(@(x) [cosd(x) sind(x)],p.Results.slopes,'UniformOutput',false);
-else
-  w = repmat({[0 0]},size(z));
-end
-
-if iscell(p.Results.tensions)
-  t = p.Results.tensions;
-else
-  t = repmat({[1.4 1.4]},size(z)); % tension = 1 seems too tight??
-end
+points = p.Results.points;
 
 if cycle
-  z{end+1} = z{1};
-  if numel(w) ~= numel(z)
-    w{end+1} = w{1};
-  end
-  if numel(t) ~= numel(z)
-    t{end+1} = [1 1];
-  end
+  points{end+1} = points{1};
 end
 
-Npoints = numel(z);
+Npoints = numel(points);
+
+z = cell(Npoints,1);
+w = cell(Npoints,1);
+t = cell(Npoints,1);
+
+for n = 1:Npoints
+  
+  pp = points{n};
+  
+  if iscell(pp)
+    
+    veclen = numel(pp);
+    z{n} = pp{1};
+    w{n} = [NaN NaN];
+    t{n} = p.Results.defaultTension*[1 1];
+    
+    if veclen >= 2 && isnumeric(pp{2}) % lazy evaluation is my friend
+      w{n} = [cosd(pp(3)) sind(pp(3))];
+    end
+    
+    if veclen >= 3 && isnumeric(pp{3})
+      t{n}(1) = pp{3};
+    end
+    
+    if veclen == 4 && isnumeric(pp{4})
+      t{n}(2) = pp{4};
+    end
+    
+  else
+    
+    z{n} = pp;
+    w{n} = [NaN NaN];
+    t{n} = p.Results.defaultTension*[1 1];
+    
+  end
+  
+end
+
 
 %% fixup vectors iff necessary
 
-t(cellfun(@(x) all(x==[0 0]),t)) = {[1 1]};
-
-if all( w{1}==[0 0] )
+if all( isnan(w{1}) )
   if cycle
     w{1} = z{2}-z{end-1};
   else
     w{1} = z{2}-z{1};
   end
 end
-if all( w{end}==[0 0] )
+if all( isnan(w{end}) )
   if cycle
     w{end} = z{2}-z{end-1};
   else
@@ -65,7 +91,7 @@ if all( w{end}==[0 0] )
   end
 end
 for ii = 2:Npoints-1
-  if all( w{ii}==[0 0] )
+  if all( isnan(w{ii}) )
     w{ii} = -z{ii-1} + z{ii+1};
   end
 end
@@ -87,8 +113,8 @@ for ii = 1:Npoints-1
   
   control_points = [...
     z{ii};
-    z{ii}+rho/(3*t{ii}(2))*norm(z{ii+1}-z{ii})*w{ii};
-    z{ii+1}-sigma/(3*t{ii+1}(1))*norm(z{ii+1}-z{ii})*w{ii+1};
+    z{ii}+rho/(3*t{ii}(1))*norm(z{ii+1}-z{ii})*w{ii};
+    z{ii+1}-sigma/(3*t{ii+1}(2))*norm(z{ii+1}-z{ii})*w{ii+1};
     z{ii+1};
     ];
   
