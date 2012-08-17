@@ -7,16 +7,18 @@ function hobbysplines(points,varargin)
 % Keypoints may be specified with optional slopes and tension parameters.
 % The syntax to do this (replacing `[x1 y1]` above, say) is
 %
-%    { [x1 y1] s1 t1_out t1_in }
+%    { [x1 y1] s1 t1 }
+%    { [x1 y1] s1 t1_in t1_out }
 %
 % where `s1` is the slope in degrees of the curve through `[x1 y1]`,
 % and `t1_out` & `t1_in` are the "exit" and "entry" tensions of the curve
-% approaching that point.
+% approaching that point. If `t1` only is specified, this is both the
+% entry and the exit tension.
 %
 % Use '' to indicate default values here; for example, for a default slope
 % but specified "exit" tension of 2.0, use
 %
-%    { [x1 y1] '' 2.0 }
+%    { [x1 y1] '' 2.0 ''}
 %
 % and note that trailing optional arguments can also be omitted.
 %
@@ -25,27 +27,39 @@ function hobbysplines(points,varargin)
 %
 %   OPTION       DEFAULT            DESCRIPTION
 %   ------       -------            -----------
-%   'tension'    [1.4]              default tension between points
+%   'tension'    [1]                default tension between points
+%   'offset'     [0 0]              offset to add to each control point
 %   'cycle'      [true]             draw an open curve instead
 %   'debug'      [false]            draw and label keypoints on the curve
-%   'linestyle'  {'color','black'}  cell of line style options
-
+%   'linestyle'  '-'                line style option(s) (use a cell for multiple)
+%   'color'      [0 0 0]            colour of the curve
+%
+% Note that at tension of 1 creates roughly circular plots
 
 %% Parse inputs
 
 p = inputParser;
 p.addRequired('points',@iscell)
-p.addOptional('defaultTension',1.4); % tension = 1 seems too tight??
+p.addOptional('tension',1);
+p.addOptional('offset',[0 0]);
 p.addOptional('cycle',true);
+p.addOptional('color',[0 0 0]);
 p.addOptional('debug',false);
 p.addOptional('linestyle',{'color','black','linewidth',1});
 
 p.parse(points,varargin{:});
 
 cycle = p.Results.cycle;
+offset = p.Results.offset;
 debug = p.Results.debug;
 points = p.Results.points;
 
+color = p.Results.color;
+linestyle = p.Results.linestyle;
+if ~iscell(linestyle)
+  linestyle = {linestyle};
+end
+  
 if cycle
   points{end+1} = points{1};
 end
@@ -60,30 +74,30 @@ for n = 1:Npoints
   
   pp = points{n};
   
+  w{n} = [NaN NaN];
+  tout{n} = p.Results.tension;
+  tin{n} = p.Results.tension;
+  
   if iscell(pp)
     
     veclen = numel(pp);
-    z{n} = pp{1};
-    w{n} = [NaN NaN];
-    t{n} = p.Results.defaultTension*[1 1];
+    z{n} = offset+pp{1};
     
     if veclen >= 2 && isnumeric(pp{2}) % lazy evaluation is my friend
       w{n} = [cosd(pp{2}) sind(pp{2})];
     end
     
     if veclen >= 3 && isnumeric(pp{3})
-      t{n}(1) = pp{3};
+      tin{n} = pp{3};
     end
     
     if veclen == 4 && isnumeric(pp{4})
-      t{n}(2) = pp{4};
+      tout{n} = pp{4};
     end
     
   else
     
-    z{n} = pp;
-    w{n} = [NaN NaN];
-    t{n} = p.Results.defaultTension*[1 1];
+    z{n} = offset+pp;
     
   end
   
@@ -98,6 +112,7 @@ if all( isnan(w{1}) )
   else
     w{1} = z{2}-z{1};
   end
+  w{1} = w{1}/norm(w{1});
 end
 if all( isnan(w{end}) )
   if cycle
@@ -105,18 +120,16 @@ if all( isnan(w{end}) )
   else
     w{end} = z{end}-z{end-1};
   end
+  w{end} = w{end}/norm(w{end});
 end
 for ii = 2:Npoints-1
   if all( isnan(w{ii}) )
     w{ii} = -z{ii-1} + z{ii+1};
   end
+  w{ii} = w{ii}/norm(w{ii});
 end
 
 %% Calculate control points and plot bezier curve segments
-%
-% My bezier code (stolen, below) can't accept more than four control points
-% and still pass through the desired points of each. Not sure whether this
-% is intentional.
 
 hold on
 
@@ -129,16 +142,21 @@ for ii = 1:Npoints-1
   
   plot_bezier(...
     z{ii},...
-    z{ii}+rho/(3*t{ii}(1))*norm(z{ii+1}-z{ii})*w{ii},...
-    z{ii+1}-sigma/(3*t{ii+1}(2))*norm(z{ii+1}-z{ii})*w{ii+1},...
+    z{ii}+rho/(3*tout{ii})*norm(z{ii+1}-z{ii})*w{ii},...
+    z{ii+1}-sigma/(3*tin{ii+1})*norm(z{ii+1}-z{ii})*w{ii+1},...
     z{ii+1},...
-    p.Results.linestyle)
+    {linestyle{:},'color',color})
 
 end
 
 if debug
-  parfor ii = 1:Npoints
-    plot(z{ii}(1),z{ii}(2),'o','color',[1 0 0])
+  if cycle
+    Mpoints = Npoints-1;
+  else
+    Mpoints = Npoints;
+  end
+  parfor ii = 1:Mpoints
+    plot(z{ii}(1),z{ii}(2),'o','color',color)
     text(z{ii}(1),z{ii}(2),['   ',num2str(ii)])
   end
 end
