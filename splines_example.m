@@ -55,3 +55,27 @@ hobbysplines(points,'debug',true,'tension',2);
 axis equal
 axis off
 
+%% 3D
+
+hfig = figure(3);
+set(hfig,'color',[1 1 1],'name','3D spline example');
+clf; hold on
+
+points = {...
+ [0 0 0],[1 1 1],[2 0 0],[1 -1 1]...
+};
+hobbysplines(points,'debug',true,'cycle',true);
+
+
+points = {...
+ {[0 0 0] '' 3},...
+ {[1 1 1] [0 1 0] 0.75 2},...
+ {[2 0 0] [0 0 -1] 1},...
+ {[1 -1 1] '' 0.75}...
+};
+hobbysplines(points,'debug',true,'cycle',true,'color','red');
+
+axis equal
+view(3)
+
+

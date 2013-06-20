@@ -1,19 +1,28 @@
 function hobbysplines(points,varargin)
 %HOBBYSPLINES Draws open or closed smooth curves from keypoints
 %
-% hobbysplines({[x1 y1], [x2 y2],... ,[xN,yN]},[opts])
+% hobbysplines({[x1 y1], [x2 y2],... ,[xN yN]},[opts])
+% hobbysplines({[x1 y1 z1], [x2 y2 z2],... ,[xN yN zN]},[opts])
 %
 % Draws a closed (cyclic) curve through keypoints 1 to N.
 % Keypoints may be specified with optional slopes and tension parameters.
 % The syntax to do this (replacing `[x1 y1]` above, say) is
 %
+% 2D:
 %    { [x1 y1] s1 t1 }
 %    { [x1 y1] s1 t1_in t1_out }
+%    { [x1 y1] [u1 v1] ... }
+%
+% 3D:
+%    { [x1 y1 z1] [u1 v1 w1] t1 }
+%    { [x1 y1 z1] [u1 v1 w1] t1_in t1_out }
 %
 % where `s1` is the slope in degrees of the curve through `[x1 y1]`,
+% `[u1 v1 w1]` is the unit vector describing the slope of the curve,
 % and `t1_out` & `t1_in` are the "exit" and "entry" tensions of the curve
 % approaching that point. If `t1` only is specified, this is both the
 % entry and the exit tension.
+% 
 %
 % Use '' to indicate default values here; for example, for a default slope
 % but specified "exit" tension of 2.0, use
@@ -28,11 +37,11 @@ function hobbysplines(points,varargin)
 %   OPTION       DEFAULT            DESCRIPTION
 %   ------       -------            -----------
 %   'tension'    [1]                default tension between points
-%   'offset'     [0 0]              offset to add to each control point
+%   'offset'     [0 0 0]            offset to add to each control point
 %   'cycle'      [true]             draw an open curve instead
 %   'debug'      [false]            draw and label keypoints on the curve
-%   'linestyle'  '-'                line style option(s) (use a cell for multiple)
-%   'color'      [0 0 0]            colour of the curve
+%   'linestyle'  {'linewidth',1}    line style option(s)
+%   'color'      'black'            colour of the curve
 %
 % Note that at tension of 1 creates roughly circular plots
 
@@ -43,9 +52,9 @@ p.addRequired('points',@iscell)
 p.addOptional('tension',1);
 p.addOptional('offset',[0 0]);
 p.addOptional('cycle',true);
-p.addOptional('color',[0 0 0]);
+p.addOptional('color','black');
 p.addOptional('debug',false);
-p.addOptional('linestyle',{'color','black','linewidth',1});
+p.addOptional('linestyle',{'linewidth',1});
 
 p.parse(points,varargin{:});
 
@@ -53,6 +62,8 @@ cycle = p.Results.cycle;
 offset = p.Results.offset;
 debug = p.Results.debug;
 points = p.Results.points;
+
+if numel(offset) == 2, offset(3) = 0; end
 
 color = p.Results.color;
 linestyle = p.Results.linestyle;
@@ -66,25 +77,39 @@ end
 
 Npoints = numel(points);
 
-z = cell(Npoints,1);
-w = cell(Npoints,1);
-t = cell(Npoints,1);
+z = cell(Npoints,1); % points
+w = cell(Npoints,1); % unit vectors of direction of curve through each point
+tin = cell(Npoints,1); % tension of curve in to point
+tout = cell(Npoints,1); % tension of curve out from point
 
 for n = 1:Npoints
   
   pp = points{n};
   
-  w{n} = [NaN NaN];
+  w{n} = [NaN NaN NaN];
   tout{n} = p.Results.tension;
   tin{n} = p.Results.tension;
   
   if iscell(pp)
+    % for input in the form pp := { [x1 y1 z1] s1 t1_in t1_out }
     
     veclen = numel(pp);
-    z{n} = offset+pp{1};
+    
+    if numel(pp{1}) == 2
+      z{n} = offset+[pp{1} 0];
+    else
+      z{n} = offset+pp{1};
+    end
     
     if veclen >= 2 && isnumeric(pp{2}) % lazy evaluation is my friend
-      w{n} = [cosd(pp{2}) sind(pp{2})];
+      switch numel(pp{2}) 
+        case 1
+          w{n} = [cosd(pp{2}) sind(pp{2}) 0];
+        case 2
+          w{n} = [pp{2} 0];
+        case 3
+          w{n} = pp{2};
+      end
     end
     
     if veclen >= 3 && isnumeric(pp{3})
@@ -96,9 +121,13 @@ for n = 1:Npoints
     end
     
   else
+    % if input in the form pp := [x1 y1 z1]
     
-    z{n} = offset+pp;
-    
+    if numel(pp) == 2
+      z{n} = offset+[pp 0];
+    else
+      z{n} = offset+pp;
+    end
   end
   
 end
@@ -145,7 +174,7 @@ for ii = 1:Npoints-1
     z{ii}+rho/(3*tout{ii})*norm(z{ii+1}-z{ii})*w{ii},...
     z{ii+1}-sigma/(3*tin{ii+1})*norm(z{ii+1}-z{ii})*w{ii+1},...
     z{ii+1},...
-    {linestyle{:},'color',color})
+    [linestyle,{'color',color}])
 
 end
 
@@ -155,9 +184,9 @@ if debug
   else
     Mpoints = Npoints;
   end
-  parfor ii = 1:Mpoints
-    plot(z{ii}(1),z{ii}(2),'o','color',color)
-    text(z{ii}(1),z{ii}(2),['   ',num2str(ii)])
+  for ii = 1:Mpoints
+    plot3(z{ii}(1),z{ii}(2),z{ii}(3),'o','color',color)
+    text(z{ii}(1),z{ii}(2),z{ii}(3),['   ',num2str(ii)])
   end
 end
 
@@ -199,7 +228,7 @@ c3 = -P1 + 3*(P2-P3) + P4;
 
 Q = t.^3*c3 + t.^2*c2 + t*c1 + repmat(P1,[N 1]);
 
-plot(Q(:,1),Q(:,2),linestyle{:});
+plot3(Q(:,1),Q(:,2),Q(:,3),linestyle{:});
 
 end
 
