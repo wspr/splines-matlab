@@ -22,14 +22,16 @@ function hobbysplines(points,varargin)
 % and `t1_out` & `t1_in` are the "exit" and "entry" tensions of the curve
 % approaching that point. If `t1` only is specified, this is both the
 % entry and the exit tension.
-% 
 %
 % Use '' to indicate default values here; for example, for a default slope
-% but specified "exit" tension of 2.0, use
+% but specified "entry" tension of 2.0, use
 %
 %    { [x1 y1] '' 2.0 ''}
 %
 % and note that trailing optional arguments can also be omitted.
+% According to Hobby, tensions should not be specified less than 0.75.
+% This software does not enforce this restriction.
+% Note that a tension of 1 creates approximately circular plots.
 %
 % Optional arguments given by [opts] can be any combination of the
 % following:
@@ -38,12 +40,16 @@ function hobbysplines(points,varargin)
 %   ------       -------            -----------
 %   'tension'    [1]                default tension between points
 %   'offset'     [0 0 0]            offset to add to each control point
-%   'cycle'      [true]             draw an open curve instead
+%   'cycle'      [true]             whether to draw a cyclic curve
 %   'debug'      [false]            draw and label keypoints on the curve
 %   'linestyle'  {'linewidth',1}    line style option(s)
 %   'color'      'black'            colour of the curve
 %
-% Note that at tension of 1 creates roughly circular plots
+% Distributed under the terms and conditions of the 2-clause BSD license:  
+% <http://opensource.org/licenses/bsd-license.php>
+%
+% Copyright 2013 Will Robertson and The University of Adelaide
+% All rights reserved.
 
 %% Parse inputs
 
@@ -231,4 +237,3 @@ Q = t.^3*c3 + t.^2*c2 + t*c1 + repmat(P1,[N 1]);
 plot3(Q(:,1),Q(:,2),Q(:,3),linestyle{:});
 
 end
-
