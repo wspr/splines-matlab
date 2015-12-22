@@ -1,10 +1,11 @@
-function hobbysplines(points,varargin)
+function Q = hobbysplines(points,varargin)
 %HOBBYSPLINES Draws open or closed smooth curves from keypoints
 %
-% hobbysplines({[x1 y1], [x2 y2],... ,[xN yN]},[opts])
-% hobbysplines({[x1 y1 z1], [x2 y2 z2],... ,[xN yN zN]},[opts])
+% Q = hobbysplines({[x1 y1], [x2 y2],... ,[xN yN]},[opts]);
+% Q = hobbysplines({[x1 y1 z1], [x2 y2 z2],... ,[xN yN zN]},[opts]);
 %
-% Draws a closed (cyclic) curve through keypoints 1 to N.
+% Draws an open or cyclic curve through keypoints 1 to N.
+% Points are output as matrix "Q".
 % Keypoints may be specified with optional slopes and tension parameters.
 % The syntax to do this (replacing `[x1 y1]` above, say) is
 %
@@ -40,15 +41,17 @@ function hobbysplines(points,varargin)
 %   ------       -------            -----------
 %   'tension'    [1]                default tension between points
 %   'offset'     [0 0 0]            offset to add to each control point
-%   'cycle'      [true]             whether to draw a cyclic curve
-%   'debug'      [false]            draw and label keypoints on the curve
+%   'cycle'      true               whether to draw a cyclic curve
+%   'debug'      false              draw and label keypoints on the curve
 %   'linestyle'  {'linewidth',1}    line style option(s)
 %   'color'      'black'            colour of the curve
+%   'bezierpoints' 50               number of points in each bezier segment
+%   'plot'       true               whether to actually draw anything
 %
 % Distributed under the terms and conditions of the 2-clause BSD license:  
 % <http://opensource.org/licenses/bsd-license.php>
 %
-% Copyright 2013 Will Robertson and The University of Adelaide
+% Copyright 2013, 2015 Will Robertson and The University of Adelaide
 % All rights reserved.
 
 %% Parse inputs
@@ -61,13 +64,17 @@ p.addOptional('cycle',true);
 p.addOptional('color','black');
 p.addOptional('debug',false);
 p.addOptional('linestyle',{'linewidth',1});
+p.addOptional('bezierpoints',50)
+p.addOptional('plot',true);
 
 p.parse(points,varargin{:});
 
-cycle = p.Results.cycle;
+cycle  = p.Results.cycle;
 offset = p.Results.offset;
-debug = p.Results.debug;
+debug  = p.Results.debug;
 points = p.Results.points;
+bezierpoints = p.Results.bezierpoints;
+plotcurve = p.Results.plot;
 
 if numel(offset) == 2, offset(3) = 0; end
 
@@ -168,6 +175,8 @@ end
 
 hold on
 
+q = nan(bezierpoints*(Npoints-1),3);
+
 for ii = 1:Npoints-1
   
   theta = arg(w{ii})-arg(z{ii+1}-z{ii});
@@ -175,16 +184,21 @@ for ii = 1:Npoints-1
   
   [rho,sigma] = velocity_parameters(theta,phi);
   
-  plot_bezier(...
+  q( (ii-1)*bezierpoints + (1:bezierpoints) ,:) = plot_bezier(...
     z{ii},...
     z{ii}+rho/(3*tout{ii})*norm(z{ii+1}-z{ii})*w{ii},...
     z{ii+1}-sigma/(3*tin{ii+1})*norm(z{ii+1}-z{ii})*w{ii+1},...
     z{ii+1},...
-    [linestyle,{'color',color}])
+    bezierpoints,plotcurve,...
+    [linestyle,{'color',color}]);
 
 end
 
-if debug
+if nargout == 1
+   Q = q; 
+end
+
+if plotcurve && debug
   if cycle
     Mpoints = Npoints-1;
   else
@@ -223,9 +237,8 @@ sigma = (2-alpha)/(1+(1-c)*cp+c*ct);
 
 end
 
-function plot_bezier(P1,P2,P3,P4,linestyle)
+function Q = plot_bezier(P1,P2,P3,P4,N,plotcurve,linestyle)
 
-N = 50;
 t = linspace(0,1,N)';
 
 c1 = 3*(P2 - P1);
@@ -234,6 +247,8 @@ c3 = -P1 + 3*(P2-P3) + P4;
 
 Q = t.^3*c3 + t.^2*c2 + t*c1 + repmat(P1,[N 1]);
 
-plot3(Q(:,1),Q(:,2),Q(:,3),linestyle{:});
+if plotcurve
+    plot3(Q(:,1),Q(:,2),Q(:,3),linestyle{:});
+end
 
 end
