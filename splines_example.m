@@ -15,7 +15,7 @@ clf;
 points = {...
  [0 0],[1 1],[2,0],...
 };
-hobbysplines(points,'debug',true,'cycle',true);
+hobbysplines(points,'debug',true,'cycle',true)
 
 % Experiment with `tension'.
 % Note the default creates roughly circular plots.
@@ -73,6 +73,26 @@ points = {...
  {[1 -1 1] '' 0.75}...
 };
 hobbysplines(points,'debug',true,'cycle',true,'color','red');
+
+axis equal
+view(3)
+
+
+%% Outputting points
+%
+% Whether you want to plot the curve manually yourself, or you want to
+% continue using the plots in the curve for some other purpose.
+
+hfig = figure(4);
+set(hfig,'color',[1 1 1],'name','3D spline example');
+clf; hold on
+
+points = {...
+ [0 0 0],[1 1 1],[2 0 0],[1 -1 1]...
+};
+Q = hobbysplines(points,'cycle',true,'plot',false);
+
+plot3(Q(:,1),Q(:,2),Q(:,3),'b--','linewidth',2)
 
 axis equal
 view(3)
